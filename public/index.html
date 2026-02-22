@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ryblox — Crée. Joue. Explore.</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Orbitron', 'sans-serif'],
+            body: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            ry: {
+              dark:   '#0a0b0f',
+              card:   '#12141c',
+              border: '#1e2130',
+              blue:   '#3d8bff',
+              cyan:   '#00d4ff',
+              purple: '#7c3aed',
+              accent: '#f97316',
+              muted:  '#4a5568',
+            }
+          },
+          animation: {
+            'float': 'float 6s ease-in-out infinite',
+            'glow-pulse': 'glowPulse 3s ease-in-out infinite',
+            'slide-up': 'slideUp 0.6s ease forwards',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-12px)' },
+            },
+            glowPulse: {
+              '0%, 100%': { boxShadow: '0 0 20px rgba(61,139,255,0.3)' },
+              '50%': { boxShadow: '0 0 40px rgba(0,212,255,0.6)' },
+            },
+            slideUp: {
+              from: { opacity: 0, transform: 'translateY(30px)' },
+              to:   { opacity: 1, transform: 'translateY(0)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0a0b0f; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+    /* Bruit de fond */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+    }
+
+    /* Grille déco */
+    .grid-bg {
+      background-image:
+        linear-gradient(rgba(61,139,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(61,139,255,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+
+    /* Gradient héro */
+    .hero-glow {
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(61,139,255,0.15) 0%, transparent 70%);
+    }
+
+    /* Texte gradient */
+    .text-gradient {
+      background: linear-gradient(135deg, #3d8bff 0%, #00d4ff 50%, #7c3aed 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Carte hover */
+    .feature-card {
+      background: #12141c;
+      border: 1px solid #1e2130;
+      transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+    }
+    .feature-card:hover {
+      border-color: #3d8bff;
+      transform: translateY(-4px);
+      box-shadow: 0 8px 40px rgba(61,139,255,0.15);
+    }
+
+    /* Bouton primaire */
+    .btn-primary {
+      background: linear-gradient(135deg, #3d8bff, #00d4ff);
+      color: #0a0b0f;
+      font-weight: 700;
+      font-family: 'Orbitron', sans-serif;
+      letter-spacing: 0.05em;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-primary:hover {
+      transform: scale(1.04);
+      box-shadow: 0 0 30px rgba(0,212,255,0.5);
+    }
+
+    /* Bouton secondaire */
+    .btn-secondary {
+      border: 1px solid #3d8bff;
+      color: #3d8bff;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+      transition: background 0.2s, color 0.2s;
+    }
+    .btn-secondary:hover { background: rgba(61,139,255,0.1); }
+
+    /* Nav */
+    nav {
+      background: rgba(10,11,15,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid #1e2130;
+    }
+
+    /* Modale */
+    .modal-overlay {
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(6px);
+    }
+
+    /* Input */
+    .ry-input {
+      background: #0a0b0f;
+      border: 1px solid #1e2130;
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .ry-input:focus {
+      outline: none;
+      border-color: #3d8bff;
+      box-shadow: 0 0 0 2px rgba(61,139,255,0.15);
+    }
+    .ry-input::placeholder { color: #4a5568; }
+
+    /* Toast */
+    #toast {
+      transition: opacity 0.3s, transform 0.3s;
+    }
+
+    /* Cube décoratif */
+    .deco-cube {
+      position: absolute;
+      border: 1px solid rgba(61,139,255,0.2);
+      animation: float 6s ease-in-out infinite;
+    }
+
+    /* World card */
+    .world-card { cursor: pointer; }
+    .world-card:hover .world-thumb { transform: scale(1.05); }
+    .world-thumb { transition: transform 0.3s; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0a0b0f; }
+    ::-webkit-scrollbar-thumb { background: #1e2130; border-radius: 3px; }
+
+    /* Stat badge */
+    .stat-badge {
+      background: linear-gradient(135deg, rgba(61,139,255,0.1), rgba(124,58,237,0.1));
+      border: 1px solid rgba(61,139,255,0.2);
+    }
+
+    /* stagger delays */
+    .delay-100 { animation-delay: 0.1s; }
+    .delay-200 { animation-delay: 0.2s; }
+    .delay-300 { animation-delay: 0.3s; }
+    .delay-400 { animation-delay: 0.4s; }
+    .delay-500 { animation-delay: 0.5s; }
+    .opacity-0-anim { opacity: 0; animation: slideUp 0.6s ease forwards; }
+  </style>
+</head>
+
+<body class="text-slate-200">
+
+<!-- ───────────────────────── NAV ───────────────────────────── -->
+<nav class="fixed top-0 left-0 right-0 z-50">
+  <div class="max-w-7xl mx-auto px-6 flex items-center justify-between h-16">
+    <!-- Logo -->
+    <a href="/" class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center animate-glow-pulse" style="background:linear-gradient(135deg,#3d8bff,#00d4ff)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0a0b0f" stroke-width="2.5">
+          <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+        </svg>
+      </div>
+      <span class="font-display font-bold text-xl tracking-wider text-white">RY<span class="text-gradient">BLOX</span></span>
+    </a>
+
+    <!-- Nav links (desktop) -->
+    <div class="hidden md:flex items-center gap-6 text-sm text-slate-400">
+      <a href="#features"  class="hover:text-white transition-colors">Fonctionnalités</a>
+      <a href="#worlds"    class="hover:text-white transition-colors">Mondes</a>
+      <a href="#catalogue" class="hover:text-white transition-colors">Catalogue</a>
+      <a href="#forum"     class="hover:text-white transition-colors">Forum</a>
+    </div>
+
+    <!-- Auth buttons -->
+    <div class="flex items-center gap-3" id="nav-auth">
+      <button onclick="openModal('login')"    class="btn-secondary px-4 py-2 rounded-lg text-sm">Connexion</button>
+      <button onclick="openModal('register')" class="btn-primary  px-4 py-2 rounded-lg text-sm">S'inscrire</button>
+    </div>
+
+    <!-- User info (shown when logged in) -->
+    <div class="hidden items-center gap-4" id="nav-user">
+      <div class="flex items-center gap-2 px-3 py-1.5 stat-badge rounded-lg">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="#f97316"><circle cx="12" cy="12" r="10"/></svg>
+        <span id="nav-rycredits" class="text-sm font-semibold text-orange-400 font-display">0</span>
+        <span class="text-xs text-slate-500">RC</span>
+      </div>
+      <span id="nav-username" class="text-sm font-medium text-white"></span>
+      <button onclick="logout()" class="btn-secondary px-3 py-1.5 rounded-lg text-xs">Déconnexion</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ──────────────────────── HÉRO ────────────────────────────── -->
+<section class="relative min-h-screen flex items-center justify-center grid-bg hero-glow pt-16" id="home">
+  <!-- Cubes décoratifs -->
+  <div class="deco-cube w-24 h-24 rounded-xl" style="top:15%;left:8%;animation-delay:0s;transform:rotate(15deg)"></div>
+  <div class="deco-cube w-16 h-16 rounded-lg"  style="top:25%;right:10%;animation-delay:2s;transform:rotate(-20deg)"></div>
+  <div class="deco-cube w-10 h-10 rounded-md"  style="bottom:30%;left:15%;animation-delay:4s;transform:rotate(35deg)"></div>
+  <div class="deco-cube w-20 h-20 rounded-xl"  style="bottom:20%;right:8%;animation-delay:1s;transform:rotate(-10deg)"></div>
+
+  <div class="relative z-10 text-center max-w-4xl mx-auto px-6">
+    <!-- Badge -->
+    <div class="inline-flex items-center gap-2 px-4 py-2 stat-badge rounded-full text-xs text-blue-400 font-medium mb-8 opacity-0-anim">
+      <span class="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
+      Plateforme sandbox nouvelle génération
+    </div>
+
+    <!-- Titre -->
+    <h1 class="font-display font-black text-5xl md:text-7xl leading-none tracking-tight mb-6 opacity-0-anim delay-100">
+      <span class="text-white">CRÉE.</span>
+      <span class="text-gradient"> JOUE.</span><br/>
+      <span class="text-white">EXPLORE.</span>
+    </h1>
+
+    <!-- Sous-titre -->
+    <p class="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed opacity-0-anim delay-200">
+      Construis des mondes en 3D, personnalise ton avatar, rejoins une communauté de créateurs passionnés. Tout ça directement dans ton navigateur.
+    </p>
+
+    <!-- CTA -->
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-4 opacity-0-anim delay-300">
+      <button onclick="openModal('register')" class="btn-primary px-8 py-4 rounded-xl text-base w-full sm:w-auto">
+        Commencer gratuitement →
+      </button>
+      <a href="#worlds" class="btn-secondary px-8 py-4 rounded-xl text-base w-full sm:w-auto text-center">
+        Explorer les mondes
+      </a>
+    </div>
+
+    <!-- Stats -->
+    <div class="flex items-center justify-center gap-8 mt-16 opacity-0-anim delay-400">
+      <div class="text-center">
+        <div class="font-display font-bold text-2xl text-gradient" id="stat-users">0</div>
+        <div class="text-xs text-slate-500 mt-1">Joueurs</div>
+      </div>
+      <div class="w-px h-10 bg-ry-border"></div>
+      <div class="text-center">
+        <div class="font-display font-bold text-2xl text-gradient" id="stat-worlds">0</div>
+        <div class="text-xs text-slate-500 mt-1">Mondes</div>
+      </div>
+      <div class="w-px h-10 bg-ry-border"></div>
+      <div class="text-center">
+        <div class="font-display font-bold text-2xl text-gradient" id="stat-items">0</div>
+        <div class="text-xs text-slate-500 mt-1">Items</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────── FEATURES ─────────────────────────── -->
+<section id="features" class="py-24 px-6 max-w-7xl mx-auto">
+  <div class="text-center mb-16">
+    <h2 class="font-display font-bold text-3xl md:text-4xl text-white mb-4">Tout ce dont tu as besoin</h2>
+    <p class="text-slate-400">Six piliers pour une expérience sandbox complète</p>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Card 1 -->
+    <div class="feature-card rounded-2xl p-6">
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-5" style="background:rgba(61,139,255,0.1);border:1px solid rgba(61,139,255,0.2)">
+        <svg width="22" height="22" fill="none" stroke="#3d8bff" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <h3 class="font-display font-bold text-white text-lg mb-3">Profils & Comptes</h3>
+      <p class="text-slate-400 text-sm leading-relaxed">Inscris-toi, personnalise ton profil, écris sur les murs d'autres joueurs. Rangs Membre, Staff, Admin.</p>
+    </div>
+    <!-- Card 2 -->
+    <div class="feature-card rounded-2xl p-6">
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-5" style="background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.2)">
+        <svg width="22" height="22" fill="none" stroke="#f97316" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      </div>
+      <h3 class="font-display font-bold text-white text-lg mb-3">Rycredits</h3>
+      <p class="text-slate-400 text-sm leading-relaxed">Gagne 50 Rycredits chaque jour, effectue des transactions et achète des items dans le catalogue.</p>
+    </div>
+    <!-- Card 3 -->
+    <div class="feature-card rounded-2xl p-6">
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-5" style="background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.2)">
+        <svg width="22" height="22" fill="none" stroke="#7c3aed" stroke-width="2" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg>
+      </div>
+      <h3 class="font-display font-bold text-white text-lg mb-3">Catalogue</h3>
+      <p class="text-slate-400 text-sm leading-relaxed">Upload tes propres textures PNG et modèles OBJ. Vends-les ou offre-les gratuitement à la communauté.</p>
+    </div>
+    <!-- Card 4 -->
+    <div class="feature-card rounded-2xl p-6">
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-5" style="background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.2)">
+        <svg width="22" height="22" fill="none" stroke="#00d4ff" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21.02 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      </div>
+      <h3 class="font-display font-bold text-white text-lg mb-3">Avatar Customizer</h3>
+      <p class="text-slate-400 text-sm leading-relaxed">Équipe tes items et colore chaque membre de ton avatar en R6 ou R15 avec un aperçu 3D en temps réel.</p>
+    </div>
+    <!-- Card 5 -->
+    <div class="feature-card rounded-2xl p-6">
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-5" style="background:rgba(61,139,255,0.1);border:1px solid rgba(61,139,255,0.2)">
+        <svg width="22" height="22" fill="none" stroke="#3d8bff" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      </div>
+      <h3 class="font-display font-bold text-white text-lg mb-3">Workshop 3D</h3>
+      <p class="text-slate-400 text-sm leading-relaxed">Éditeur Three.js pour placer des briques Block, Wedge, Cylinder, Ball avec position, rotation, couleur et transparence.</p>
+    </div>
+    <!-- Card 6 -->
+    <div class="feature-card rounded-2xl p-6">
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-5" style="background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.2)">
+        <svg width="22" height="22" fill="none" stroke="#f97316" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <h3 class="font-display font-bold text-white text-lg mb-3">Social & Forum</h3>
+      <p class="text-slate-400 text-sm leading-relaxed">Système d'amis, forum catégorisé, mur de profil. Rejoins la communauté et partage tes créations.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ────────────────────── MONDES ───────────────────────────── -->
+<section id="worlds" class="py-20 px-6" style="background:rgba(18,20,28,0.5)">
+  <div class="max-w-7xl mx-auto">
+    <div class="flex items-center justify-between mb-10">
+      <div>
+        <h2 class="font-display font-bold text-3xl text-white">Mondes populaires</h2>
+        <p class="text-slate-400 text-sm mt-1">Les créations les plus visitées</p>
+      </div>
+      <button class="btn-secondary px-4 py-2 rounded-lg text-sm">Voir tout</button>
+    </div>
+
+    <div id="worlds-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <!-- Chargé dynamiquement ou placeholders -->
+      <div class="feature-card rounded-xl overflow-hidden world-card">
+        <div class="world-thumb h-36 overflow-hidden bg-gradient-to-br from-blue-900 to-purple-900 flex items-center justify-center">
+          <svg width="40" height="40" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="m9 9 6 6M15 9l-6 6"/></svg>
+        </div>
+        <div class="p-4">
+          <div class="h-3 bg-ry-border rounded animate-pulse mb-2 w-3/4"></div>
+          <div class="h-2 bg-ry-border rounded animate-pulse w-1/2"></div>
+        </div>
+      </div>
+      <div class="feature-card rounded-xl overflow-hidden world-card">
+        <div class="world-thumb h-36 bg-gradient-to-br from-emerald-900 to-blue-900 flex items-center justify-center">
+          <svg width="40" height="40" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        </div>
+        <div class="p-4">
+          <div class="h-3 bg-ry-border rounded animate-pulse mb-2 w-3/4"></div>
+          <div class="h-2 bg-ry-border rounded animate-pulse w-1/2"></div>
+        </div>
+      </div>
+      <div class="feature-card rounded-xl overflow-hidden world-card">
+        <div class="world-thumb h-36 bg-gradient-to-br from-rose-900 to-orange-900 flex items-center justify-center">
+          <svg width="40" height="40" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></svg>
+        </div>
+        <div class="p-4">
+          <div class="h-3 bg-ry-border rounded animate-pulse mb-2 w-3/4"></div>
+          <div class="h-2 bg-ry-border rounded animate-pulse w-1/2"></div>
+        </div>
+      </div>
+      <div class="feature-card rounded-xl overflow-hidden world-card">
+        <div class="world-thumb h-36 bg-gradient-to-br from-violet-900 to-cyan-900 flex items-center justify-center">
+          <svg width="40" height="40" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" viewBox="0 0 24 24"><polygon points="12 2 22 20 2 20"/></svg>
+        </div>
+        <div class="p-4">
+          <div class="h-3 bg-ry-border rounded animate-pulse mb-2 w-3/4"></div>
+          <div class="h-2 bg-ry-border rounded animate-pulse w-1/2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────── FOOTER ────────────────────────── -->
+<footer class="border-t border-ry-border py-12 px-6">
+  <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+    <div class="flex items-center gap-3">
+      <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background:linear-gradient(135deg,#3d8bff,#00d4ff)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a0b0f" stroke-width="2.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+      </div>
+      <span class="font-display font-bold text-white">RYBLOX</span>
+    </div>
+    <p class="text-slate-500 text-sm">© 2024 Ryblox — Plateforme sandbox indépendante</p>
+    <div class="flex gap-6 text-sm text-slate-500">
+      <a href="#" class="hover:text-white transition-colors">CGU</a>
+      <a href="#" class="hover:text-white transition-colors">Confidentialité</a>
+      <a href="#" class="hover:text-white transition-colors">Contact</a>
+    </div>
+  </div>
+</footer>
+
+<!-- ──────────────────── MODALE AUTH ─────────────────────────── -->
+<div id="auth-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center px-4">
+  <div class="modal-overlay absolute inset-0" onclick="closeModal()"></div>
+  <div class="relative z-10 w-full max-w-md">
+    <div class="feature-card rounded-2xl p-8 shadow-2xl">
+      <!-- Onglets -->
+      <div class="flex gap-2 mb-8">
+        <button id="tab-login"    onclick="switchTab('login')"    class="flex-1 py-2 rounded-lg text-sm font-display font-bold transition-all">Connexion</button>
+        <button id="tab-register" onclick="switchTab('register')" class="flex-1 py-2 rounded-lg text-sm font-display font-bold transition-all">S'inscrire</button>
+      </div>
+
+      <!-- Formulaire connexion -->
+      <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs text-slate-400 mb-2 uppercase tracking-widest">Nom d'utilisateur ou email</label>
+          <input id="login-username" type="text" placeholder="SuperJoueur123" class="ry-input w-full px-4 py-3 rounded-xl text-sm" required />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-2 uppercase tracking-widest">Mot de passe</label>
+          <input id="login-password" type="password" placeholder="••••••••" class="ry-input w-full px-4 py-3 rounded-xl text-sm" required />
+        </div>
+        <div id="login-error" class="hidden text-red-400 text-xs text-center py-2 px-3 bg-red-900 bg-opacity-20 rounded-lg"></div>
+        <button type="submit" class="btn-primary w-full py-3 rounded-xl text-sm mt-2">Se connecter</button>
+      </form>
+
+      <!-- Formulaire inscription -->
+      <form id="form-register" class="hidden space-y-4" onsubmit="handleRegister(event)">
+        <div>
+          <label class="block text-xs text-slate-400 mb-2 uppercase tracking-widest">Nom d'utilisateur</label>
+          <input id="reg-username" type="text" placeholder="SuperJoueur123" class="ry-input w-full px-4 py-3 rounded-xl text-sm" required />
+          <p class="text-xs text-slate-500 mt-1">3-20 caractères, lettres/chiffres/_</p>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-2 uppercase tracking-widest">Email</label>
+          <input id="reg-email" type="email" placeholder="toi@email.com" class="ry-input w-full px-4 py-3 rounded-xl text-sm" required />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-2 uppercase tracking-widest">Mot de passe</label>
+          <input id="reg-password" type="password" placeholder="Min. 8 caractères" class="ry-input w-full px-4 py-3 rounded-xl text-sm" minlength="8" required />
+        </div>
+        <div id="reg-error"   class="hidden text-red-400   text-xs text-center py-2 px-3 bg-red-900   bg-opacity-20 rounded-lg"></div>
+        <div id="reg-success" class="hidden text-green-400 text-xs text-center py-2 px-3 bg-green-900 bg-opacity-20 rounded-lg"></div>
+        <button type="submit" class="btn-primary w-full py-3 rounded-xl text-sm mt-2">Créer mon compte</button>
+      </form>
+
+      <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ────────────────────── TOAST ─────────────────────────────── -->
+<div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 opacity-0 pointer-events-none z-[200]">
+  <div id="toast-inner" class="px-5 py-3 rounded-xl text-sm font-medium shadow-2xl"></div>
+</div>
+
+<!-- ─────────────────────── SCRIPT ─────────────────────────────── -->
+<script>
+  const API = ''; // même origine — si serveur séparé : 'http://localhost:3000'
+
+  // ── Utilitaires ──────────────────────────────────────────────
+  function showToast(msg, type = 'success') {
+    const toast = document.getElementById('toast');
+    const inner = document.getElementById('toast-inner');
+    inner.textContent = msg;
+    inner.className   = `px-5 py-3 rounded-xl text-sm font-medium shadow-2xl ${
+      type === 'error'   ? 'bg-red-600 text-white'   :
+      type === 'warning' ? 'bg-yellow-600 text-white' :
+                           'bg-emerald-600 text-white'
+    }`;
+    toast.style.opacity   = '1';
+    toast.style.transform = 'translateX(-50%) translateY(0)';
+    setTimeout(() => {
+      toast.style.opacity   = '0';
+      toast.style.transform = 'translateX(-50%) translateY(10px)';
+    }, 3500);
+  }
+
+  function getToken()  { return localStorage.getItem('ry_token'); }
+  function getUser()   { return JSON.parse(localStorage.getItem('ry_user') || 'null'); }
+
+  async function apiFetch(url, opts = {}) {
+    const token = getToken();
+    const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const res  = await fetch(API + url, { ...opts, headers });
+    const data = await res.json();
+    return { ok: res.ok, status: res.status, data };
+  }
+
+  // ── Modale ───────────────────────────────────────────────────
+  function openModal(tab = 'login') {
+    document.getElementById('auth-modal').classList.remove('hidden');
+    switchTab(tab);
+  }
+  function closeModal() {
+    document.getElementById('auth-modal').classList.add('hidden');
+  }
+  function switchTab(tab) {
+    const isLogin = tab === 'login';
+    document.getElementById('form-login').classList.toggle('hidden', !isLogin);
+    document.getElementById('form-register').classList.toggle('hidden', isLogin);
+    document.getElementById('tab-login').style.cssText    = isLogin
+      ? 'background:linear-gradient(135deg,#3d8bff,#00d4ff);color:#0a0b0f;'
+      : 'color:#4a5568;background:transparent;';
+    document.getElementById('tab-register').style.cssText = !isLogin
+      ? 'background:linear-gradient(135deg,#3d8bff,#00d4ff);color:#0a0b0f;'
+      : 'color:#4a5568;background:transparent;';
+  }
+
+  // ── Auth handlers ────────────────────────────────────────────
+  async function handleLogin(e) {
+    e.preventDefault();
+    const errEl = document.getElementById('login-error');
+    errEl.classList.add('hidden');
+    const { ok, data } = await apiFetch('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({
+        username: document.getElementById('login-username').value.trim(),
+        password: document.getElementById('login-password').value
+      })
+    });
+    if (!ok) {
+      errEl.textContent = data.message;
+      errEl.classList.remove('hidden');
+      return;
+    }
+    localStorage.setItem('ry_token', data.token);
+    localStorage.setItem('ry_user',  JSON.stringify(data.user));
+    closeModal();
+    updateNavAuth(data.user);
+    showToast(`Bienvenue, ${data.user.username} !`);
+  }
+
+  async function handleRegister(e) {
+    e.preventDefault();
+    const errEl = document.getElementById('reg-error');
+    const okEl  = document.getElementById('reg-success');
+    errEl.classList.add('hidden');
+    okEl.classList.add('hidden');
+    const { ok, data } = await apiFetch('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({
+        username: document.getElementById('reg-username').value.trim(),
+        email:    document.getElementById('reg-email').value.trim(),
+        password: document.getElementById('reg-password').value
+      })
+    });
+    if (!ok) {
+      errEl.textContent = data.message;
+      errEl.classList.remove('hidden');
+      return;
+    }
+    localStorage.setItem('ry_token', data.token);
+    localStorage.setItem('ry_user',  JSON.stringify(data.user));
+    okEl.textContent = data.message;
+    okEl.classList.remove('hidden');
+    setTimeout(() => { closeModal(); updateNavAuth(data.user); }, 1200);
+    showToast(`Compte créé ! Bienvenue ${data.user.username} 🎉`);
+  }
+
+  function logout() {
+    localStorage.removeItem('ry_token');
+    localStorage.removeItem('ry_user');
+    document.getElementById('nav-auth').classList.remove('hidden');
+    document.getElementById('nav-user').classList.add('hidden');
+    showToast('Déconnecté.', 'warning');
+  }
+
+  function updateNavAuth(user) {
+    document.getElementById('nav-auth').classList.add('hidden');
+    const navUser = document.getElementById('nav-user');
+    navUser.classList.remove('hidden');
+    navUser.classList.add('flex');
+    document.getElementById('nav-username').textContent  = user.username;
+    document.getElementById('nav-rycredits').textContent = user.rycredits;
+  }
+
+  // ── Compteur animé ───────────────────────────────────────────
+  function animateCount(el, target, duration = 1800) {
+    let start = 0;
+    const step = (timestamp) => {
+      if (!start) start = timestamp;
+      const progress = Math.min((timestamp - start) / duration, 1);
+      el.textContent = Math.floor(progress * target).toLocaleString();
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
+  // ── Init ─────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    // Restaurer session
+    const user = getUser();
+    const token = getToken();
+    if (user && token) updateNavAuth(user);
+
+    // Compteurs décoratifs
+    animateCount(document.getElementById('stat-users'),  1482);
+    animateCount(document.getElementById('stat-worlds'),  347);
+    animateCount(document.getElementById('stat-items'),  2841);
+
+    // Keyboard ESC → ferme modale
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+    // Charger mondes si API disponible
+    loadWorlds();
+  });
+
+  async function loadWorlds() {
+    try {
+      const { ok, data } = await apiFetch('/api/worlds');
+      if (!ok || !data.worlds || data.worlds.length === 0) return;
+      const grid = document.getElementById('worlds-grid');
+      grid.innerHTML = data.worlds.slice(0, 4).map(w => `
+        <div class="feature-card rounded-xl overflow-hidden world-card">
+          <div class="world-thumb h-36 bg-gradient-to-br from-blue-900 to-purple-900 flex items-center justify-center relative">
+            <div class="absolute inset-0 flex items-center justify-center text-slate-600">
+              <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/></svg>
+            </div>
+            <span class="relative z-10 font-display text-xl font-bold text-white opacity-30">${w.name.charAt(0)}</span>
+          </div>
+          <div class="p-4">
+            <h4 class="font-display font-bold text-white text-sm mb-1 truncate">${w.name}</h4>
+            <div class="flex items-center gap-3 text-xs text-slate-500">
+              <span>👁 ${w.visits}</span>
+              <span>❤️ ${w.likes?.length || 0}</span>
+              <span class="truncate">par ${w.creatorName}</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    } catch (err) {
+      // L'API n'est pas encore démarrée, on garde les placeholders
+    }
+  }
+</script>
+</body>
+</html>

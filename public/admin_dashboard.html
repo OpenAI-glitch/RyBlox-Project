@@ -1,0 +1,34 @@
+﻿<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<title>Ryblox — Dashboard Admin</title>
+<script src=""></script>
+<link href="" rel="stylesheet" />
+<style>
+body { background-color: #0a0b0f; color: #e2e8f0; font-family: sans-serif; }
+.ry-card { background: #12141c; border: 1px solid #1e2130; border-radius: 12px; }
+</style>
+</head>
+<body class="p-6">
+<script>
+if (localStorage.getItem('userRank') !== 'Admin') { window.location.href = '/'; }
+</script>
+
+<div class="max-w-6xl mx-auto">
+<div class="flex justify-between items-center mb-10">
+<h1 class="font-['Orbitron'] text-3xl text-red-500">🛡️ ADMIN PANEL</h1>
+<a href="/" class="bg-gray-800 px-4 py-2 rounded text-sm">Retour au site</a>
+</div>
+
+</div>
+
+<script>
+const token = localStorage.getItem('token');
+const headers = { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
+
+</script>
+
+</body>
+</html>
